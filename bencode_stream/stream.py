@@ -73,14 +73,14 @@ class StreamingDecoder:
         pass
 
     def handle_error(self, msg: str) -> None:
-        emsg = f"Error: {msg} (at byte {self.byte_offset})"
+        emsg = f"Error: {msg} (at byte {self._byte_offset})"
         raise DecodeError(emsg)
 
     def __init__(self) -> None:
         # this is a stack representing the current parse state
         self._now_inside: List[DataType] = []
         # this has the byte offset of current parsing
-        self.byte_offset: int = 0
+        self._byte_offset: int = 0
         # this is a stack of parse states for each dict we're in -- note it
         # only has entries for dicts, so it will usually be shorter than
         # _now_inside
@@ -204,7 +204,7 @@ class StreamingDecoder:
                 del th
 
                 self._bytes_parsed_len += parsed_len
-                self.byte_offset += parsed_len
+                self._byte_offset += parsed_len
                 if self._bytes_parsed_len >= self._bytes_expect_len:
                     self._bytes_parsed_len = None
                     self._bytes_expect_len = None
@@ -263,7 +263,7 @@ class StreamingDecoder:
                 num_b = self._buf[1:end_ind]
                 val = int(num_b)
                 self.handle_int(val)
-                self.byte_offset += len(num_b) + 2
+                self._byte_offset += len(num_b) + 2
                 self._buf = self._buf[end_ind + 1:]
                 self._check_dict_key()
             elif cur_type == DataType.BYTES:
@@ -284,7 +284,7 @@ class StreamingDecoder:
                 val = int(num_b)
                 self._bytes_expect_len = val
                 self._bytes_parsed_len = 0
-                self.byte_offset += len(num_b) + 1
+                self._byte_offset += len(num_b) + 1
                 self._buf = self._buf[end_ind + 1:]
                 self._now_inside.append(DataType.BYTES)
                 self.handle_bytes_start(val)
@@ -292,13 +292,13 @@ class StreamingDecoder:
                 continue
             elif cur_type == DataType.LIST:
                 self._now_inside.append(DataType.LIST)
-                self.byte_offset += 1
+                self._byte_offset += 1
                 self._buf = self._buf[1:]
                 self.handle_list_start()
             elif cur_type == DataType.DICT:
                 self._now_inside.append(DataType.DICT)
                 self._dicts.append(DictParseState())
-                self.byte_offset += 1
+                self._byte_offset += 1
                 self._buf = self._buf[1:]
                 self.handle_dict_start()
             elif cur_type == DataType.END:
@@ -314,7 +314,7 @@ class StreamingDecoder:
                     self.handle_error("invalid end token")
                     return
                 self._check_dict_key()
-                self.byte_offset += 1
+                self._byte_offset += 1
                 self._buf = self._buf[1:]
 
     def end_data(self) -> None:
