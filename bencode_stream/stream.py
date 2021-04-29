@@ -5,7 +5,7 @@
 
 import enum, attr
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 class DataType(enum.Enum):
     INT = 0
@@ -102,7 +102,7 @@ class StreamingDecoder:
         self._bytes_expect_len: Optional[int] = None
         self._bytes_parsed_len: Optional[int] = None
 
-    def _can_expect(self):
+    def _can_expect(self) -> Tuple[DataType, ...]:
         # this function returns which types the parser can currently expect
 
         ALL_TYPES = (DataType.INT, DataType.BYTES, DataType.LIST,

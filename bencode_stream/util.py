@@ -5,7 +5,7 @@ from base64 import b64encode
 
 from . import stream
 
-from typing import IO
+from typing import IO, Optional
 
 def parse_file(dec: stream.StreamingDecoder, inp: IO,
                chunk_size: int = 1024) -> None:
@@ -26,7 +26,7 @@ class PrintingDecoder(stream.StreamingDecoder):
         print("handle_dict_key_start")
 
     def handle_dict_key_end(self, key: bytes) -> None:
-        print(f"handle_dict_key_end: {key}")
+        print(f"handle_dict_key_end: {key!r}")
 
     def handle_dict_value_start(self) -> None:
         print("handle_dict_value_start")
@@ -53,7 +53,7 @@ class PrintingDecoder(stream.StreamingDecoder):
         print(f"handle_bytes_start: {blen}")
 
     def handle_bytes_data(self, data: bytes) -> None:
-        print(f"handle_bytes_data: {data}")
+        print(f"handle_bytes_data: {data!r}")
 
     def handle_bytes_end(self) -> None:
         print("handle_bytes_end")
@@ -65,7 +65,7 @@ class ToJSONDecoder(stream.StreamingDecoder):
     def __init__(self) -> None:
         super().__init__()
 
-        self.bytes_accum = None
+        self.bytes_accum: Optional[bytes] = None
         self.in_dict_key = False
         self.first_key = True
 
@@ -90,7 +90,7 @@ class ToJSONDecoder(stream.StreamingDecoder):
         print("[", end='')
         self.first_key = True
 
-    def handle_list_value_start(self):
+    def handle_list_value_start(self) -> None:
         if not self.first_key:
             print(", ", end='')
         self.first_key = False
@@ -102,9 +102,11 @@ class ToJSONDecoder(stream.StreamingDecoder):
         self.bytes_accum = b""
 
     def handle_bytes_data(self, data: bytes) -> None:
+        assert self.bytes_accum is not None
         self.bytes_accum += data
 
     def handle_bytes_end(self) -> None:
+        assert self.bytes_accum is not None
         try:
             s = self.bytes_accum.decode('ascii')
         except UnicodeDecodeError:
@@ -112,6 +114,7 @@ class ToJSONDecoder(stream.StreamingDecoder):
                 raise ValueError("no base64 dict key")
             s = 'base64:' + b64encode(self.bytes_accum).decode('ascii')
         print(json.dumps(s), end='')
+        self.bytes_accum = None
 
     def handle_int(self, val: int) -> None:
         print(val, end='')
@@ -119,7 +122,8 @@ class ToJSONDecoder(stream.StreamingDecoder):
 @click.command()
 @click.argument('inp', type=click.Path(exists=True))
 @click.option('--json/--no-json')
-def bencode_test(inp: str, json: bool):
+def bencode_test(inp: str, json: bool) -> None:
+    dec: stream.StreamingDecoder
     if json:
         dec = ToJSONDecoder()
     else:
