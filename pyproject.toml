@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "bencode_stream"
+version = "0.0.1"
+description = "A stream-based bencode encoder/decoder"
+authors = ["Tom Hunt <tom@tomhunt.email>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+attrs = "^20.3.0"
+click = "^7.1.2"
+
+[tool.poetry.dev-dependencies]
+mypy = "^0.812"
+
+[tool.poetry.scripts]
+bencode_test = "bencode_stream.util:bencode_test"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
